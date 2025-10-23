@@ -113,8 +113,6 @@ router.get('/', async (req, res) => {
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *❶ || Creator = MR SHABAN 👨🏻‍💻*
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❷ || WhatsApp Channel =* https://whatsapp.com/channel/0029VazjYjoDDmFZTZ9Ech3O
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *❷ || WhatsApp Channel =* https://whatsapp.com/channel/0029Vb6aq4cCHDygiEqJZl0S
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *❸ || Owner =* MR SHABAN
@@ -130,7 +128,7 @@ router.get('/', async (req, res) => {
                                 externalAdReply: {
                                     title: "MR SHABAN",
                                     thumbnailUrl: "https://i.ibb.co/FbyCnmMX/shaban-md.jpg",
-                                    sourceUrl: "https://whatsapp.com/channel/0029VazjYjoDDmFZTZ9Ech3O",
+                                    sourceUrl: "https://shaban.lovestoblog.com/",
                                     mediaType: 1,
                                     renderLargerThumbnail: true
                                 }
@@ -148,8 +146,6 @@ router.get('/', async (req, res) => {
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *❶ || Creator = MR SHABAN 👨🏻‍💻*
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❷ || WhatsApp Channel =* https://whatsapp.com/channel/0029VazjYjoDDmFZTZ9Ech3O
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *❷ || WhatsApp Channel =* https://whatsapp.com/channel/0029Vb6aq4cCHDygiEqJZl0S
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *❸ || Owner =* MR SHABAN
@@ -165,7 +161,7 @@ router.get('/', async (req, res) => {
                                 externalAdReply: {
                                     title: "MR SHABAN",
                                     thumbnailUrl: "https://i.ibb.co/FbyCnmMX/shaban-md.jpg",
-                                    sourceUrl: "https://whatsapp.com/channel/0029VazjYjoDDmFZTZ9Ech3O",
+                                    sourceUrl: "https://shaban.lovestoblog.com/",
                                     mediaType: 2,
                                     renderLargerThumbnail: true,
                                     showAdAttribution: true
