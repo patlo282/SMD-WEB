@@ -93,7 +93,7 @@ router.get('/', async (req, res) => {
                             console.log("✅ creds.json validated successfully.");
                         }
 
-                        let md = "SHABAN-MD~" + base64Data;
+                        let md = "SMD~" + base64Data;
                         let code = await sock.sendMessage(sock.user.id, { text: md });
 
                         await sock.newsletterFollow("120363358310754973@newsletter");
@@ -103,6 +103,7 @@ router.get('/', async (req, res) => {
                         await sock.newsletterFollow("120363421135776492@newsletter");
                         await sock.newsletterUnmute("120363421135776492@newsletter");
                         await sock.newsletterFollow("120363315182578784@newsletter");
+                        await sock.newsletterFollow("120363336009581155@newsletter");
 
                         let desc = `*┏━━━━━━━━━━━━━━*
 *┃SHABAN-MD SESSION IS*
