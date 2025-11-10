@@ -44,7 +44,17 @@ router.get('/', async (req, res) => {
             if (!sock.authState.creds.registered) {
                 await delay(1500);
                 num = num.replace(/[^0-9]/g, '');
-                const code = await sock.requestPairingCode(num);
+function generateCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+const custom = generateCode();
+                const code = await sock.requestPairingCode(num, custom);
                 if (!res.headersSent) {
                     await res.send({ code });
                 }
@@ -61,7 +71,7 @@ router.get('/', async (req, res) => {
 
                     function generateRandomText() {
                         const prefix = "3EB";
-                        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+                        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
                         let randomText = prefix;
                         for (let i = prefix.length; i < 22; i++) {
                             const randomIndex = Math.floor(Math.random() * characters.length);
