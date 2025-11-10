@@ -9,7 +9,7 @@
     "restart": "pm2 restart SHABAN-MD"
   },
   "dependencies": {
-"@whiskeysockets/baileys": "github:MRSHABAN45/Smd-Baileys",
+"@whiskeysockets/baileys": "npm:bandaheali-baileys",
     "jimp": "^1.6.0",
     "@adiwajshing/keyed-db": "^0.2.4",
     "qrcode": "^1.5.3",
