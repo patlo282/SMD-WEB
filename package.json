@@ -9,7 +9,7 @@
     "restart": "pm2 restart MANU-MD"
   },
   "dependencies": {
-"@whiskeysockets/baileys": "git+https://gitlab.com/amilaKumara/baileys-pmd.git",
+"@whiskeysockets/baileys": "github:gatanina-li/baileys",
     "jimp": "^0.16.13",
     "@adiwajshing/keyed-db": "^0.2.4",
     "qrcode": "^1.5.4",
