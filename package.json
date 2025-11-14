@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "pm2 start index.js --deep-monitoring --attach --name SHABAN-MD",
+    "start": "node index.js",
     "stop": "pm2 stop SHABAN-MD",
     "restart": "pm2 restart SHABAN-MD"
   },
@@ -20,8 +20,7 @@
     "body-parser": "^1.20.1",
     "express": "latest",
     "path": "^0.12.7",
-    "megajs": "1.1.7",
-    "pm2": "^6.0.8",
+    "pm2": "^6.0.6",
     "async-mutex": "0.4.1"
   }
 }
