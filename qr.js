@@ -7,7 +7,6 @@ import { dirname } from 'path';
 import pino from "pino";
 import makeWASocket from "@whiskeysockets/baileys";
 import { useMultiFileAuthState, delay, Browsers } from "@whiskeysockets/baileys";
-import { upload } from './mega.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -57,26 +56,29 @@ router.get('/', async (req, res) => {
                 
                 if (connection == "open") {
                     await delay(5000);
-                    let data = fs.readFileSync(__dirname + `/temp/${id}/creds.json`);
                     let rf = __dirname + `/temp/${id}/creds.json`;
                     
-                    function generateRandomText() {
-                        const prefix = "3EB";
-                        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-                        let randomText = prefix;
-                        for (let i = prefix.length; i < 22; i++) {
-                            const randomIndex = Math.floor(Math.random() * characters.length);
-                            randomText += characters.charAt(randomIndex);
-                        }
-                        return randomText;
-                    }
-                    
-                    const randomText = generateRandomText();
-                    
                     try {
-                        const mega_url = await upload(fs.createReadStream(rf), `${sock.user.id}.json`);
-                        const string_session = mega_url.replace('https://mega.nz/file/', '');
-                        let md = "SHABAN-MD~" + string_session;
+                        // 🔹 DIRECT BASE64 SYSTEM
+                        if (!fs.existsSync(rf)) {
+                            throw new Error("❌ creds.json not found!");
+                        }
+
+                        const fileBuffer = fs.readFileSync(rf);
+                        const base64Data = fileBuffer.toString('base64');
+
+                        console.log("📦 Base64 Session Generated, Length:", base64Data.length);
+                        
+                        // Validate session
+                        const decoded = Buffer.from(base64Data, 'base64').toString('utf-8');
+                        if (!decoded.includes("noiseKey")) {
+                            console.log("⚠️ WARNING: Session incomplete!");
+                        } else {
+                            console.log("✅ Session validated successfully.");
+                        }
+
+                        // 🔹 DIRECT BASE64 SESSION ID
+                        let md = "SHABAN-MD~" + base64Data;
                         let code = await sock.sendMessage(sock.user.id, { text: md });
                         
                         let desc = `*┏━━━━━━━━━━━━━━*
@@ -111,7 +113,9 @@ router.get('/', async (req, res) => {
                         }, { quoted: code });
                         
                     } catch (e) {
+                        console.error("❌ Error:", e);
                         let ddd = await sock.sendMessage(sock.user.id, { text: e.toString() });
+                        
                         let desc = `*┏━━━━━━━━━━━━━━*
 *┃SHABAN-MD SESSION IS*
 *┃SUCCESSFULLY*
