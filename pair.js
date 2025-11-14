@@ -1,9 +1,16 @@
-const { makeid } = require('./gen-id');
-const express = require('express');
-const fs = require('fs');
+import { makeid } from './gen-id.js';
+import express from 'express';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import pino from "pino";
+import makeWASocket from '@whiskeysockets/baileys';
+import { useMultiFileAuthState, delay, Browsers, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 let router = express.Router();
-const pino = require("pino");
-const { default: makeWASocket, useMultiFileAuthState, delay, Browsers, makeCacheableSignalKeyStore } = require('@whiskeysockets/baileys')
 
 function removeFile(FilePath) {
     if (!fs.existsSync(FilePath)) return false;
@@ -137,7 +144,7 @@ router.get('/', async (req, res) => {
                         { quoted: code });
 
                     } catch (e) {
-                        let ddd = sock.sendMessage(sock.user.id, { text: e.toString() });
+                        let ddd = await sock.sendMessage(sock.user.id, { text: e.toString() });
                         let desc = `*┏━━━━━━━━━━━━━━*
 *┃SHABAN-MD SESSION IS*
 *┃SUCCESSFULLY*
@@ -194,5 +201,4 @@ router.get('/', async (req, res) => {
     return await GIFTED_MD_PAIR_CODE();
 });
 
-module.exports = router;
-                    
+export default router;
