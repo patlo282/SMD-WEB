@@ -13,7 +13,7 @@ const __path = process.cwd();
 const app = express();
 
 // 🔹 KOYEB KE LIYE PORT CHANGE KAREN
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
 
 EventEmitter.defaultMaxListeners = 500;
 
