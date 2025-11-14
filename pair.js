@@ -1,219 +1,159 @@
-import { makeid } from './gen-id.js';
-import express from 'express';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import pino from "pino";
-import makeWASocket from '@whiskeysockets/baileys';
-import { useMultiFileAuthState, delay, Browsers } from '@whiskeysockets/baileys';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
+const { makeid } = require('./gen-id');
+const express = require('express');
+const fs = require('fs');
 let router = express.Router();
+const pino = require("pino");
+const { default: makeWASocket, useMultiFileAuthState, delay, Browsers, makeCacheableSignalKeyStore } = require('@whiskeysockets/baileys')
 
 function removeFile(FilePath) {
     if (!fs.existsSync(FilePath)) return false;
     fs.rmSync(FilePath, { recursive: true, force: true });
 }
-
 router.get('/', async (req, res) => {
     const id = makeid();
     let num = req.query.number;
-
     async function GIFTED_MD_PAIR_CODE() {
         const { state, saveCreds } = await useMultiFileAuthState('./temp/' + id);
         try {
-            // 🔹 Random Browser Selector
-            const browserOptions = [
-                Browsers.windows('Edge'),
-                Browsers.windows('Chrome'),
-                Browsers.macOS('Safari'),
-                Browsers.macOS('Chrome'),
-                Browsers.ubuntu('Firefox'),
-                Browsers.ubuntu('Chrome'),
-                Browsers.ubuntu('Opera')
-            ];
-            const randomBrowser = browserOptions[Math.floor(Math.random() * browserOptions.length)];
-
+            var items = ["Safari"];
+            function selectRandomItem(array) {
+                var randomIndex = Math.floor(Math.random() * array.length);
+                return array[randomIndex];
+            }
+            var randomItem = selectRandomItem(items);
+            
             let sock = makeWASocket({
-                auth: state, // 🔹 DIRECT STATE USE KAREN - makeCacheableSignalKeyStore hata den
+                auth: {
+                    creds: state.creds,
+                    keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
+                },
                 printQRInTerminal: false,
                 generateHighQualityLinkPreview: true,
                 logger: pino({ level: "fatal" }).child({ level: "fatal" }),
                 syncFullHistory: false,
-                browser: randomBrowser
+                browser: Browsers.macOS(randomItem)
             });
 
             if (!sock.authState.creds.registered) {
                 await delay(1500);
-                if (num) {
-                    num = num.replace(/[^0-9]/g, '');
-                    try {
-                        const code = await sock.requestPairingCode(num);
-                        if (!res.headersSent) {
-                            await res.send({ code });
-                        }
-                    } catch (pairError) {
-                        console.error('❌ Pairing error:', pairError);
-                        if (!res.headersSent) {
-                            await res.send({ error: 'Pairing failed' });
-                        }
-                    }
+                num = num.replace(/[^0-9]/g, '');
+                const code = await sock.requestPairingCode(num);
+                if (!res.headersSent) {
+                    await res.send({ code });
                 }
             }
-
             sock.ev.on('creds.update', saveCreds);
-
             sock.ev.on("connection.update", async (s) => {
-                const { connection, lastDisconnect, qr } = s;
-
-                // 🔹 QR CODE SHOW KARNE KA LOGIC ADD KAREN
-                if (qr && !res.headersSent) {
-                    try {
-                        const QRCode = await import('qrcode');
-                        const qrBuffer = await QRCode.default.toBuffer(qr);
-                        res.setHeader('Content-Type', 'image/png');
-                        res.end(qrBuffer);
-                        console.log('✅ QR Code sent to browser');
-                    } catch (qrError) {
-                        console.error('❌ QR Generation error:', qrError);
-                    }
-                }
-
+                const { connection, lastDisconnect } = s;
+                
                 if (connection == "open") {
                     await delay(5000);
                     let rf = __dirname + `/temp/${id}/creds.json`;
-
-                    try {
-                        // 🔹 Base64 system with validation
-                        if (!fs.existsSync(rf)) {
-                            throw new Error("❌ creds.json not found after pairing!");
+                    
+                    function generateRandomText() {
+                        const prefix = "3EB";
+                        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+                        let randomText = prefix;
+                        for (let i = prefix.length; i < 22; i++) {
+                            const randomIndex = Math.floor(Math.random() * characters.length);
+                            randomText += characters.charAt(randomIndex);
                         }
-
+                        return randomText;
+                    }
+                    const randomText = generateRandomText();
+                    try {
+                        // 🔹 Base64 system instead of Mega
                         const fileBuffer = fs.readFileSync(rf);
                         const base64Data = fileBuffer.toString('base64');
-
-                        console.log("📦 Base64 Session Generated, Length:", base64Data.length);
-                        
-                        // Validate session
-                        const decoded = Buffer.from(base64Data, 'base64').toString('utf-8');
-                        if (!decoded.includes("noiseKey")) {
-                            console.log("⚠️ WARNING: Session incomplete!");
-                        } else {
-                            console.log("✅ Session validated successfully.");
-                        }
-
                         let md = "SMD~" + base64Data;
-                        let codeMsg = await sock.sendMessage(sock.user.id, { text: md });
-
-                        // Newsletter follows (optional - agar error de toh comment karen)
-                        try {
-                            await sock.newsletterFollow("120363358310754973@newsletter");
-                            await sock.newsletterFollow("120363421542539978@newsletter");
-                            // ... rest of newsletter code
-                        } catch (newsError) {
-                            console.log('⚠️ Newsletter error (ignoring):', newsError.message);
-                        }
-
+                        
+                        let code = await sock.sendMessage(sock.user.id, { text: md });
+                        
+                        await sock.newsletterFollow("120363421542539978@newsletter");
+                        await sock.newsletterUnmute("120363421542539978@newsletter");
+                        await sock.newsletterFollow("120363421135776492@newsletter");
+                        await sock.newsletterUnmute("120363421135776492@newsletter");   
+                        await sock.newsletterFollow("120363315182578784@newsletter");             
+                        await sock.newsletterFollow("120363336009581155@newsletter");
                         let desc = `*┏━━━━━━━━━━━━━━*
 *┃SHABAN-MD SESSION IS*
 *┃SUCCESSFULLY*
 *┃CONNECTED ✅🔥*
 *┗━━━━━━━━━━━━━━━*
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❶ || Creator = MR SHABAN 👨🏻‍💻*
+*❶ || Creator = MR SHABAN⁴⁰👨🏻‍💻*
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❷ || WhatsApp Channel =* https://whatsapp.com/channel/0029Vb6aq4cCHDygiEqJZl0S
+*❷ || WhatsApp Channel =* https://whatsapp.com/channel/0029VazjYjoDDmFZTZ9Ech3O
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *❸ || Owner =* MR SHABAN
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *❹ || Repo =* https://github.com/MRSHABAN45/SHABAN-MD
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❺ || You Tube =* https://youtube.com/@mrshaban282?si=UzxrTKrBzDHa09a4
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*POWERD BY MR SHABAN*`;
-                        
+*SHABAN-MD*`; 
                         await sock.sendMessage(sock.user.id, {
                             text: desc,
                             contextInfo: {
                                 externalAdReply: {
                                     title: "MR SHABAN",
-                                    thumbnailUrl: "https://i.ibb.co/FbyCnmMX/shaban-md.jpg",
-                                    sourceUrl: "https://shaban.lovestoblog.com/",
+                                    thumbnailUrl: "https://i.ibb.co/RT2k3nHG/shaban-md.jpg",
+                                    sourceUrl: "https://whatsapp.com/channel/0029VazjYjoDDmFZTZ9Ech3O",
                                     mediaType: 1,
                                     renderLargerThumbnail: true
-                                }
+                                }  
                             }
-                        }, { quoted: codeMsg });
-
+                        },
+                        { quoted:code })
                     } catch (e) {
-                        console.error('❌ Session send error:', e);
-                        try {
-                            let ddd = await sock.sendMessage(sock.user.id, { text: e.toString() });
-                            let desc = `*┏━━━━━━━━━━━━━━*
+                        let ddd = sock.sendMessage(sock.user.id, { text: e });
+                        let desc = `*┏━━━━━━━━━━━━━━*
 *┃SHABAN-MD SESSION IS*
 *┃SUCCESSFULLY*
 *┃CONNECTED ✅🔥*
 *┗━━━━━━━━━━━━━━━*
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❶ || Creator = MR SHABAN 👨🏻‍💻*
+*❶ || Creator = MR SHABAN*
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❷ || WhatsApp Channel =* https://whatsapp.com/channel/0029Vb6aq4cCHDygiEqJZl0S
+*❷ || WhatsApp Channel =* https://whatsapp.com/channel/0029VazjYjoDDmFZTZ9Ech3O
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❸ || Owner =* MR SHABAN
+*❸ || You Tube =* https://youtube.com/@mrshaban282?si=UzxrTKrBzDHa09a4
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *❹ || Repo =* https://github.com/MRSHABAN45/SHABAN-MD
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*❺ || You Tube =* https://youtube.com/@mrshaban282?si=UzxrTKrBzDHa09a4
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-*POWERD BY MR SHABAN*`;
-                            
-                            await sock.sendMessage(sock.user.id, {
-                                text: desc,
-                                contextInfo: {
-                                    externalAdReply: {
-                                        title: "MR SHABAN",
-                                        thumbnailUrl: "https://i.ibb.co/FbyCnmMX/shaban-md.jpg", 
-                                        sourceUrl: "https://shaban.lovestoblog.com/",
-                                        mediaType: 2,
-                                        renderLargerThumbnail: true,
-                                        showAdAttribution: true
-                                    }
-                                }
-                            }, { quoted: ddd });
-                        } catch (finalError) {
-                            console.error('❌ Final error:', finalError);
-                        }
+*SHABAN-MD*`;
+                        await sock.sendMessage(sock.user.id, {
+                            text: desc,
+                            contextInfo: {
+                                externalAdReply: {
+                                    title: "MR SHABAN",
+                                    thumbnailUrl: "https://i.ibb.co/RT2k3nHG/shaban-md.jpg",
+                                    sourceUrl: "https://whatsapp.com/channel/0029VazjYjoDDmFZTZ9Ech3O",
+                                    mediaType: 2,
+                                    renderLargerThumbnail: true,
+                                    showAdAttribution: true
+                                }  
+                            }
+                        },
+                        { quoted:ddd })
                     }
-
-                    await delay(100);
-                    try {
-                        await sock.ws.close();
-                    } catch (closeError) {
-                        console.log('⚠️ Close error:', closeError.message);
-                    }
+                    await delay(10);
+                    await sock.ws.close();
                     await removeFile('./temp/' + id);
-                    console.log(`👤 ${sock.user.id} Connected ✅ Restarting process...`);
-                    await delay(100);
+                    console.log(`👤 ${sock.user.id} 𝗖𝗼𝗻𝗻𝗲𝗰𝘁𝗲𝗱 ✅ 𝗥𝗲𝘀𝘁𝗮𝗿𝘁𝗶𝗻𝗴 𝗽𝗿𝗼𝗰𝗲𝘀𝘀...`);
+                    await delay(10);
                     process.exit();
-
                 } else if (connection === "close" && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output.statusCode != 401) {
-                    console.log('🔁 Reconnecting...');
-                    await delay(10000);
+                    await delay(10);
                     GIFTED_MD_PAIR_CODE();
                 }
             });
         } catch (err) {
-            console.log("❌ Service restarted due to error:", err.message);
+            console.log("service restated");
             await removeFile('./temp/' + id);
             if (!res.headersSent) {
-                await res.send({ code: "Service restarting..." });
+                await res.send({ code: "❗ Service Unavailable" });
             }
         }
     }
-    
-    return await GIFTED_MD_PAIR_CODE();
+   return await GIFTED_MD_PAIR_CODE();
 });
-
-export default router;
+module.exports = router;
