@@ -11,7 +11,9 @@ const __dirname = dirname(__filename);
 const __path = process.cwd();
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+
+// 🔹 KOYEB KE LIYE PORT CHANGE KAREN
+const PORT = process.env.PORT || 3000;
 
 EventEmitter.defaultMaxListeners = 500;
 
@@ -33,11 +35,13 @@ app.use('/', async (req, res, next) => {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`
-Don't Forgot To Give Star
-
- Server running on http://localhost:` + PORT);
+✅ SHABAN-MD Server Started Successfully
+🌐 Server running on port: ${PORT}
+📱 QR Code: http://0.0.0.0:${PORT}/qr  
+🔗 Pair Code: http://0.0.0.0:${PORT}/pair
+    `);
 });
 
 export default app;
