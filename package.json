@@ -9,7 +9,7 @@
     "restart": "pm2 restart SHABAN-MD"
   },
   "dependencies": {
-"@whiskeysockets/baileys": "npm:@zenzxz/baileys@latest",
+"@whiskeysockets/baileys": "npm:@zenzxz/baileys@latest"
     "jimp": "^0.16.13",
     "@adiwajshing/keyed-db": "^0.2.4",
     "qrcode": "^1.5.3",
