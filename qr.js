@@ -20,42 +20,44 @@ function removeFile(FilePath) {
 
 router.get('/', async (req, res) => {
     const id = makeid();
+    let responseSent = false;
     
     async function GIFTED_MD_PAIR_CODE() {
-        const {
-            state,
-            saveCreds
-        } = await useMultiFileAuthState('./temp/' + id);
+        const { state, saveCreds } = await useMultiFileAuthState('./temp/' + id);
         
         try {
-            var items = ["Safari"];
-            function selectRandomItem(array) {
-                var randomIndex = Math.floor(Math.random() * array.length);
-                return array[randomIndex];
-            }
-            var randomItem = selectRandomItem(items);
-            
             let sock = makeWASocket({
                 auth: state,
                 printQRInTerminal: false,
-                logger: pino({
-                    level: "silent"
-                }),
+                logger: pino({ level: "silent" }),
                 browser: Browsers.macOS("Desktop"),
             });
             
             sock.ev.on('creds.update', saveCreds);
+            
             sock.ev.on("connection.update", async (s) => {
-                const {
-                    connection,
-                    lastDisconnect,
-                    qr
-                } = s;
+                const { connection, lastDisconnect, qr } = s;
                 
-                if (qr) await res.end(await QRCode.toBuffer(qr));
+                // 🔹 QR CODE HANDLING - RESPONSE ALREADY SEND NA HO
+                if (qr && !responseSent) {
+                    try {
+                        const qrBuffer = await QRCode.toBuffer(qr);
+                        res.setHeader('Content-Type', 'image/png');
+                        res.end(qrBuffer);
+                        responseSent = true;
+                        console.log('✅ QR Code sent to browser');
+                    } catch (qrError) {
+                        console.error('❌ QR Generation error:', qrError);
+                        if (!responseSent) {
+                            res.status(500).send('QR Generation Failed');
+                            responseSent = true;
+                        }
+                    }
+                }
                 
                 if (connection == "open") {
-                    await delay(5000);
+                    console.log('✅ WhatsApp Connected!');
+                    await delay(3000);
                     let rf = __dirname + `/temp/${id}/creds.json`;
                     
                     try {
@@ -79,7 +81,7 @@ router.get('/', async (req, res) => {
 
                         // 🔹 DIRECT BASE64 SESSION ID
                         let md = "SHABAN-MD~" + base64Data;
-                        let code = await sock.sendMessage(sock.user.id, { text: md });
+                        let codeMsg = await sock.sendMessage(sock.user.id, { text: md });
                         
                         let desc = `*┏━━━━━━━━━━━━━━*
 *┃SHABAN-MD SESSION IS*
@@ -110,13 +112,14 @@ router.get('/', async (req, res) => {
                                     renderLargerThumbnail: true
                                 }  
                             }
-                        }, { quoted: code });
+                        }, { quoted: codeMsg });
                         
                     } catch (e) {
-                        console.error("❌ Error:", e);
-                        let ddd = await sock.sendMessage(sock.user.id, { text: e.toString() });
-                        
-                        let desc = `*┏━━━━━━━━━━━━━━*
+                        console.error("❌ Session error:", e);
+                        try {
+                            let errorMsg = await sock.sendMessage(sock.user.id, { text: "Error: " + e.message });
+                            
+                            let desc = `*┏━━━━━━━━━━━━━━*
 *┃SHABAN-MD SESSION IS*
 *┃SUCCESSFULLY*
 *┃CONNECTED ✅🔥*
@@ -133,40 +136,49 @@ router.get('/', async (req, res) => {
 *❺ || You Tube =* https://youtube.com/@mrshaban282?si=UzxrTKrBzDHa09a4
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *💙POWERD BY MR SHABAN⁴⁰💛*`;
-                        
-                        await sock.sendMessage(sock.user.id, {
-                            text: desc,
-                            contextInfo: {
-                                externalAdReply: {
-                                    title: "MR SHABAN⁴⁰",
-                                    thumbnailUrl: "https://i.ibb.co/RT2k3nHG/shaban-md.jpg",
-                                    sourceUrl: "https://whatsapp.com/channel/0029VazjYjoDDmFZTZ9Ech3O",
-                                    mediaType: 2,
-                                    renderLargerThumbnail: true,
-                                    showAdAttribution: true
-                                }  
-                            }
-                        }, { quoted: ddd });
+                            
+                            await sock.sendMessage(sock.user.id, {
+                                text: desc,
+                                contextInfo: {
+                                    externalAdReply: {
+                                        title: "MR SHABAN⁴⁰",
+                                        thumbnailUrl: "https://i.ibb.co/RT2k3nHG/shaban-md.jpg",
+                                        sourceUrl: "https://whatsapp.com/channel/0029VazjYjoDDmFZTZ9Ech3O",
+                                        mediaType: 2,
+                                        renderLargerThumbnail: true,
+                                        showAdAttribution: true
+                                    }  
+                                }
+                            }, { quoted: errorMsg });
+                        } catch (finalError) {
+                            console.error('❌ Final error:', finalError);
+                        }
                     }
                     
-                    await delay(10);
-                    await sock.ws.close();
+                    await delay(100);
+                    try {
+                        await sock.ws.close();
+                    } catch (closeError) {
+                        console.log('⚠️ Close error:', closeError.message);
+                    }
                     await removeFile('./temp/' + id);
-                    console.log(`👤 ${sock.user.id} 𝗖𝗼𝗻𝗻𝗲𝗰𝘁𝗲𝗱 ✅ 𝗥𝗲𝘀𝘁𝗮𝗿𝘁𝗶𝗻𝗴 𝗽𝗿𝗼𝗰𝗲𝘀𝘀...`);
-                    await delay(10);
+                    console.log(`👤 ${sock.user.id} Connected ✅ Restarting...`);
+                    await delay(100);
                     process.exit();
                     
                 } else if (connection === "close" && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output.statusCode != 401) {
-                    await delay(10);
+                    console.log('🔁 Reconnecting...');
+                    await delay(5000);
                     GIFTED_MD_PAIR_CODE();
                 }
             });
             
         } catch (err) {
-            console.log("service restated");
+            console.log("❌ Service error:", err.message);
             await removeFile('./temp/' + id);
-            if (!res.headersSent) {
-                await res.send({ code: "❗ Service Unavailable" });
+            if (!responseSent) {
+                res.status(500).send("Service Error");
+                responseSent = true;
             }
         }
     }
@@ -174,9 +186,10 @@ router.get('/', async (req, res) => {
     await GIFTED_MD_PAIR_CODE();
 });
 
-setInterval(() => {
-    console.log("☘️ 𝗥𝗲𝘀𝘁𝗮𝗿𝘁𝗶𝗻𝗴 𝗽𝗿𝗼𝗰𝗲𝘀𝘀...");
-    process.exit();
-}, 180000); //30min
+// 🔹 AUTO RESTART REMOVE KAREN - PROBLEM CREATE KAR RAHA THA
+// setInterval(() => {
+//     console.log("☘️ 𝗥𝗲𝘀𝘁𝗮𝗿𝘁𝗶𝗻𝗴 𝗽𝗿𝗼𝗰𝗲𝘀𝘀...");
+//     process.exit();
+// }, 180000);
 
 export default router;
