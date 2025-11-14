@@ -1,26 +1,27 @@
 {
-"name": "smd-web",
-    "version": "0.0.1",
-    "description": "A multi functional whatsapp bot Web paircode.",
-    "main": "index.js",
-"scripts": {
+  "name": "smd-web",
+  "version": "0.0.1",
+  "description": "A multi functional whatsapp bot Web paircode.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
     "start": "pm2 start index.js --deep-monitoring --attach --name SHABAN-MD",
     "stop": "pm2 stop SHABAN-MD",
     "restart": "pm2 restart SHABAN-MD"
   },
   "dependencies": {
-"@whiskeysockets/baileys": "6.7.21",
+    "@whiskeysockets/baileys": "6.7.21",
     "jimp": "^1.6.0",
     "@adiwajshing/keyed-db": "^0.2.4",
     "qrcode": "^1.5.3",
     "awesome-phonenumber": "^2.64.0",
     "pino": "^8.1.0",
-    "phone" : "3.1.30",
+    "phone": "3.1.30",
     "body-parser": "^1.20.1",
     "express": "latest",
     "path": "^0.12.7",
     "megajs": "1.1.7",
-    "pm2": "^6.0.6",
-    "async-mutex":"0.4.1"
-   }
+    "pm2": "^6.0.8",
+    "async-mutex": "0.4.1"
+  }
 }
