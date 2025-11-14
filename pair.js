@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import pino from "pino";
 import makeWASocket from '@whiskeysockets/baileys';
-import { useMultiFileAuthState, delay, Browsers, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys';
+import { useMultiFileAuthState, delay, Browsers } from '@whiskeysockets/baileys';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,10 +37,7 @@ router.get('/', async (req, res) => {
             const randomBrowser = browserOptions[Math.floor(Math.random() * browserOptions.length)];
 
             let sock = makeWASocket({
-                auth: {
-                    creds: state.creds,
-                    keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
-                },
+                auth: state, // 🔹 DIRECT STATE USE KAREN - makeCacheableSignalKeyStore hata den
                 printQRInTerminal: false,
                 generateHighQualityLinkPreview: true,
                 logger: pino({ level: "fatal" }).child({ level: "fatal" }),
@@ -50,33 +47,43 @@ router.get('/', async (req, res) => {
 
             if (!sock.authState.creds.registered) {
                 await delay(1500);
-                num = num.replace(/[^0-9]/g, '');
-                const code = await sock.requestPairingCode(num);
-                if (!res.headersSent) {
-                    await res.send({ code });
+                if (num) {
+                    num = num.replace(/[^0-9]/g, '');
+                    try {
+                        const code = await sock.requestPairingCode(num);
+                        if (!res.headersSent) {
+                            await res.send({ code });
+                        }
+                    } catch (pairError) {
+                        console.error('❌ Pairing error:', pairError);
+                        if (!res.headersSent) {
+                            await res.send({ error: 'Pairing failed' });
+                        }
+                    }
                 }
             }
 
             sock.ev.on('creds.update', saveCreds);
 
             sock.ev.on("connection.update", async (s) => {
-                const { connection, lastDisconnect } = s;
+                const { connection, lastDisconnect, qr } = s;
+
+                // 🔹 QR CODE SHOW KARNE KA LOGIC ADD KAREN
+                if (qr && !res.headersSent) {
+                    try {
+                        const QRCode = await import('qrcode');
+                        const qrBuffer = await QRCode.default.toBuffer(qr);
+                        res.setHeader('Content-Type', 'image/png');
+                        res.end(qrBuffer);
+                        console.log('✅ QR Code sent to browser');
+                    } catch (qrError) {
+                        console.error('❌ QR Generation error:', qrError);
+                    }
+                }
 
                 if (connection == "open") {
                     await delay(5000);
                     let rf = __dirname + `/temp/${id}/creds.json`;
-
-                    function generateRandomText() {
-                        const prefix = "3EB";
-                        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-                        let randomText = prefix;
-                        for (let i = prefix.length; i < 22; i++) {
-                            const randomIndex = Math.floor(Math.random() * characters.length);
-                            randomText += characters.charAt(randomIndex);
-                        }
-                        return randomText;
-                    }
-                    const randomText = generateRandomText();
 
                     try {
                         // 🔹 Base64 system with validation
@@ -87,30 +94,27 @@ router.get('/', async (req, res) => {
                         const fileBuffer = fs.readFileSync(rf);
                         const base64Data = fileBuffer.toString('base64');
 
-                        // Debug checks
                         console.log("📦 Base64 Session Generated, Length:", base64Data.length);
-                        if (base64Data.length < 500) {
-                            console.log("⚠️ WARNING: Session looks incomplete, try pairing again!");
-                        }
-
+                        
+                        // Validate session
                         const decoded = Buffer.from(base64Data, 'base64').toString('utf-8');
                         if (!decoded.includes("noiseKey")) {
-                            console.log("⚠️ WARNING: creds.json content corrupted or incomplete!");
+                            console.log("⚠️ WARNING: Session incomplete!");
                         } else {
-                            console.log("✅ creds.json validated successfully.");
+                            console.log("✅ Session validated successfully.");
                         }
 
                         let md = "SMD~" + base64Data;
-                        let code = await sock.sendMessage(sock.user.id, { text: md });
+                        let codeMsg = await sock.sendMessage(sock.user.id, { text: md });
 
-                        await sock.newsletterFollow("120363358310754973@newsletter");
-                        await sock.newsletterFollow("120363421542539978@newsletter");
-                        sock.newsletterUnmute("120363421542539978@newsletter");
-                        await sock.newsletterUnmute("120363358310754973@newsletter");
-                        await sock.newsletterFollow("120363421135776492@newsletter");
-                        await sock.newsletterUnmute("120363421135776492@newsletter");
-                        await sock.newsletterFollow("120363315182578784@newsletter");
-                        await sock.newsletterFollow("120363336009581155@newsletter");
+                        // Newsletter follows (optional - agar error de toh comment karen)
+                        try {
+                            await sock.newsletterFollow("120363358310754973@newsletter");
+                            await sock.newsletterFollow("120363421542539978@newsletter");
+                            // ... rest of newsletter code
+                        } catch (newsError) {
+                            console.log('⚠️ Newsletter error (ignoring):', newsError.message);
+                        }
 
                         let desc = `*┏━━━━━━━━━━━━━━*
 *┃SHABAN-MD SESSION IS*
@@ -129,6 +133,7 @@ router.get('/', async (req, res) => {
 *❺ || You Tube =* https://youtube.com/@mrshaban282?si=UzxrTKrBzDHa09a4
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *POWERD BY MR SHABAN*`;
+                        
                         await sock.sendMessage(sock.user.id, {
                             text: desc,
                             contextInfo: {
@@ -140,12 +145,13 @@ router.get('/', async (req, res) => {
                                     renderLargerThumbnail: true
                                 }
                             }
-                        },
-                        { quoted: code });
+                        }, { quoted: codeMsg });
 
                     } catch (e) {
-                        let ddd = await sock.sendMessage(sock.user.id, { text: e.toString() });
-                        let desc = `*┏━━━━━━━━━━━━━━*
+                        console.error('❌ Session send error:', e);
+                        try {
+                            let ddd = await sock.sendMessage(sock.user.id, { text: e.toString() });
+                            let desc = `*┏━━━━━━━━━━━━━━*
 *┃SHABAN-MD SESSION IS*
 *┃SUCCESSFULLY*
 *┃CONNECTED ✅🔥*
@@ -162,42 +168,51 @@ router.get('/', async (req, res) => {
 *❺ || You Tube =* https://youtube.com/@mrshaban282?si=UzxrTKrBzDHa09a4
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 *POWERD BY MR SHABAN*`;
-                        await sock.sendMessage(sock.user.id, {
-                            text: desc,
-                            contextInfo: {
-                                externalAdReply: {
-                                    title: "MR SHABAN",
-                                    thumbnailUrl: "https://i.ibb.co/FbyCnmMX/shaban-md.jpg",
-                                    sourceUrl: "https://shaban.lovestoblog.com/",
-                                    mediaType: 2,
-                                    renderLargerThumbnail: true,
-                                    showAdAttribution: true
+                            
+                            await sock.sendMessage(sock.user.id, {
+                                text: desc,
+                                contextInfo: {
+                                    externalAdReply: {
+                                        title: "MR SHABAN",
+                                        thumbnailUrl: "https://i.ibb.co/FbyCnmMX/shaban-md.jpg", 
+                                        sourceUrl: "https://shaban.lovestoblog.com/",
+                                        mediaType: 2,
+                                        renderLargerThumbnail: true,
+                                        showAdAttribution: true
+                                    }
                                 }
-                            }
-                        },
-                        { quoted: ddd });
+                            }, { quoted: ddd });
+                        } catch (finalError) {
+                            console.error('❌ Final error:', finalError);
+                        }
                     }
 
-                    await delay(10);
-                    await sock.ws.close();
+                    await delay(100);
+                    try {
+                        await sock.ws.close();
+                    } catch (closeError) {
+                        console.log('⚠️ Close error:', closeError.message);
+                    }
                     await removeFile('./temp/' + id);
                     console.log(`👤 ${sock.user.id} Connected ✅ Restarting process...`);
-                    await delay(10);
+                    await delay(100);
                     process.exit();
 
                 } else if (connection === "close" && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output.statusCode != 401) {
-                    await delay(10);
+                    console.log('🔁 Reconnecting...');
+                    await delay(10000);
                     GIFTED_MD_PAIR_CODE();
                 }
             });
         } catch (err) {
-            console.log("service restated");
+            console.log("❌ Service restarted due to error:", err.message);
             await removeFile('./temp/' + id);
             if (!res.headersSent) {
-                await res.send({ code: "❗ Service Unavailable" });
+                await res.send({ code: "Service restarting..." });
             }
         }
     }
+    
     return await GIFTED_MD_PAIR_CODE();
 });
 
