@@ -9,8 +9,8 @@
     "restart": "pm2 restart SHABAN-MD"
   },
   "dependencies": {
-"@whiskeysockets/baileys": "npm:@zenzxz/baileys@latest",
-    "jimp": "^0.16.13",
+"@whiskeysockets/baileys": "6.7.21",
+    "jimp": "^1.6.0",
     "@adiwajshing/keyed-db": "^0.2.4",
     "qrcode": "^1.5.3",
     "awesome-phonenumber": "^2.64.0",
